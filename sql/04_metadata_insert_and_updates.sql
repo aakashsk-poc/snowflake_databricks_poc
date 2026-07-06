@@ -26,6 +26,7 @@ VALUES (
 
     'uc_dev_snt_fdn', 'raw', 'dim_product_raw',
     '/Workspace/Shared/snowflake_databricks_poc/transformations/layer0/dim_product_l0.py', 'APPEND', true,
+    
 
     'uc_dev_snt_fdn', 'curated', 'dim_product_curated',
     '/Workspace/Shared/snowflake_databricks_poc/transformations/layer1/dim_product_l1.py', 'MERGE', 'product_id',

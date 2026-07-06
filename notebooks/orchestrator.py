@@ -1,5 +1,8 @@
 # Databricks notebook source
-# Databricks notebook source
+# /// script
+# [tool.databricks.environment]
+# environment_version = "2"
+# ///
 """
 notebooks/orchestrator.py
 
@@ -34,12 +37,16 @@ workspace_url = spark.conf.get("spark.databricks.workspaceUrl", "unknown")
 executed_by = spark.sql("SELECT current_user()").collect()[0][0]
 
 # ---- 1. Look up the metadata row for this table ----
-metadata_row = (
-    spark.table(f"{catalog}.config.ingestion_metadata")
-    .filter(f"table_id = '{table_id}'")
-    .collect()[0]
+metadata = (
+    spark.table(f"{catalog}.config.ingestion_metadata_sample")
+    .filter(f"table_id='{table_id}'")
+    .collect()
 )
 
+if not metadata:
+    raise Exception(f"Metadata not found for {table_id}")
+
+metadata_row = metadata[0]
 is_active_col = f"layer{layer}_is_active"
 script_path_col = f"layer{layer}_script_path"
 target_catalog_col = f"layer{layer}_target_catalog"
@@ -60,10 +67,10 @@ if not metadata_row[is_active_col]:
 # ---- 3. Start the audit run ----
 run_context = logger.start_run(
     spark, catalog, job_run_id, table_id, layer,
-    metadata_row["source_system"], workspace_url, environment, executed_by,
-    reporting_unit_id=metadata_row["reporting_unit_id"],
+    metadata_row["source_system"], workspace_url, environment, executed_by
+    
 )
-
+# , reporting_unit_id=metadata_row["reporting_unit_id"],
 try:
     # ---- 4. Dynamically load the table's transformation script ----
     script_path = metadata_row[script_path_col]

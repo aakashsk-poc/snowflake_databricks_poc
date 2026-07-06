@@ -9,6 +9,7 @@ inside a try/except wrapper, so every run leaves exactly one row.
 import uuid
 from datetime import datetime
 from pyspark.sql import Row
+from pyspark.sql.types import *
 
 AUDIT_TABLE = "{catalog}.audit.ingestion_audit_log"
 
@@ -25,31 +26,61 @@ def start_run(spark, catalog, job_run_id, table_id, layer, source_system,
     audit_id = str(uuid.uuid4())
     start_time = _now()
 
-    row = Row(
-        audit_id=audit_id,
-        job_run_id=job_run_id,
-        pipeline_name=pipeline_name,
-        notebook_name=notebook_name,
-        table_name=table_id,
-        layer=str(layer),
-        source_system=source_system,
-        reporting_unit_id=reporting_unit_id,
-        environment=environment,
-        workspace_url=workspace_url,
-        executed_by=executed_by,
-        start_time=start_time,
-        end_time=None,
-        duration_seconds=None,
-        status="RUNNING",
-        records_read=0,
-        records_inserted=0,
-        records_updated=0,
-        records_rejected=0,
-        error_message=None,
-    )
+    row = {
+        "audit_id": audit_id,
+        "job_run_id": job_run_id,
+        "pipeline_name": pipeline_name,
+        "notebook_name": notebook_name,
+        "table_name": table_id,
+        "layer": str(layer),
+        "source_system": source_system,
+        "reporting_unit_id": reporting_unit_id,
+        "environment": environment,
+        "workspace_url": workspace_url,
+        "executed_by": executed_by,
+        "start_time": start_time,
+        "end_time": None,
+        "duration_seconds": None,
+        "status": "RUNNING",
+        "records_read": 0,
+        "records_inserted": 0,
+        "records_updated": 0,
+        "records_rejected": 0,
+        "error_message": None,
+    }
+
+    audit_schema = StructType([
+        StructField("audit_id", StringType(), False),
+        StructField("job_run_id", StringType(), True),
+        StructField("pipeline_name", StringType(), True),
+        StructField("notebook_name", StringType(), True),
+        StructField("table_name", StringType(), True),
+        StructField("layer", StringType(), True),
+        StructField("source_system", StringType(), True),
+        StructField("reporting_unit_id", StringType(), True),
+        StructField("environment", StringType(), True),
+        StructField("workspace_url", StringType(), True),
+        StructField("executed_by", StringType(), True),
+        StructField("start_time", TimestampType(), True),
+        StructField("end_time", TimestampType(), True),
+        StructField("duration_seconds", DoubleType(), True),
+        StructField("status", StringType(), True),
+        StructField("records_read", LongType(), True),
+        StructField("records_inserted", LongType(), True),
+        StructField("records_updated", LongType(), True),
+        StructField("records_rejected", LongType(), True),
+        StructField("error_message", StringType(), True)
+    ])
+    
+    table_name = AUDIT_TABLE.format(catalog=catalog)
+    spark.createDataFrame([row], audit_schema)\
+    .write\
+    .format("delta")\
+    .mode("append")\
+    .saveAsTable(table_name)
 
     table_name = AUDIT_TABLE.format(catalog=catalog)
-    spark.createDataFrame([row]).write.format("delta").mode("append").saveAsTable(table_name)
+    # spark.createDataFrame([row]).write.format("delta").mode("append").saveAsTable(table_name)
 
     return {"audit_id": audit_id, "catalog": catalog, "start_time": start_time}
 
