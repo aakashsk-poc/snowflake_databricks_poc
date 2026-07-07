@@ -62,7 +62,8 @@ if not metadata_row[is_active_col]:
                             environment, executed_by,
                             reporting_unit_id=metadata_row["reporting_unit_id"])
     logger.end_run(spark, ctx, status="SKIPPED")
-    dbutils.notebook.exit("SKIPPED: layer not active")
+    dbutils.notebook.exit("SKIPPED") 
+    #dbutils.notebook.exit("SKIPPED: layer not active")
 
 # ---- 3. Start the audit run ----
 run_context = logger.start_run(
@@ -94,7 +95,7 @@ try:
 
     # ---- 6. Log success ----
     logger.end_run(spark, run_context, status="SUCCESS", **write_result)
-
+    dbutils.notebook.exit("SUCCESS")
 except Exception as e:
     # Log the failure, then re-raise so the Databricks Task itself shows
     # as Failed in the Jobs UI -- audit log alone isn't enough, the DAG

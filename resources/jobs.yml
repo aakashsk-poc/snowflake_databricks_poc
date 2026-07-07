@@ -1,0 +1,72 @@
+resources:
+  jobs:
+
+    snowflake_ingestion:
+
+      name: snowflake_databricks_poc
+
+      tasks:
+
+        ####################################################################
+        # Task 1
+        #
+        # Read metadata and return the active table list.
+        ####################################################################
+
+        - task_key: get_active_tables
+
+          notebook_task:
+
+            notebook_path: /Workspace/Shared/snowflake_databricks_poc/notebooks/get_active_tables
+
+            base_parameters:
+
+              catalog: ${var.catalog}
+
+          environment_key: serverless_env
+
+        ####################################################################
+        # Task 2
+        #
+        # Databricks automatically loops over every table returned from
+        # get_active_tables.py
+        #
+        ####################################################################
+
+        - task_key: foreach_tables
+
+          depends_on:
+
+            - task_key: get_active_tables
+
+          for_each_task:
+
+            inputs: "{{tasks.get_active_tables.values.table_ids}}"
+
+            concurrency: 10
+
+            task:
+
+              task_key: run_table
+
+              notebook_task:
+
+                notebook_path: /Workspace/Shared/snowflake_databricks_poc/notebooks/table_runner
+
+                base_parameters:
+
+                  table_id: "{{input}}"
+
+                  catalog: ${var.catalog}
+
+                  environment: dev
+
+              environment_key: serverless_env
+
+      environments:
+
+        - environment_key: serverless_env
+
+          spec:
+
+            client: "1"

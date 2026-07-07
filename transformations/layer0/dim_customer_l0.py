@@ -1,5 +1,18 @@
+"""Layer 0 (raw landing) for DIM_CUSTOMER. Same shape as dim_product_l0.py.
+from pyspark.sql.functions import current_timestamp, lit, input_file_name
+
+def run(spark, metadata_row):
+    source_path = metadata_row["source_table"]
+    df = spark.read.option("header", "true").option("inferSchema", "false").csv(source_path)
+    df = (
+        df.withColumn("source_file_name", input_file_name())
+          .withColumn("ingestion_timestamp", current_timestamp())
+          .withColumn("job_run_id", lit(metadata_row["table_id"]))
+    )
+    return df
+  """
 """
-transformations/layer0/dim_product_l0.py
+transformations/layer0/dim_customer_l0.py
 
 Layer 0 (raw landing) for DIM_PRODUCT. Reads the source file from a Unity
 Catalog Volume -- this is the ONLY thing that changes when you move to the
